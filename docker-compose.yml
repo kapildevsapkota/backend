@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  database_container:
+    image: mysql:9.1
+    environment:
+      MYSQL_ROOT_PASSWORD: sapkota2*
+      MYSQL_DATABASE: backup
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  app_container:
+    image: my_app_image
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - database_container
+
+  migrator:
+    image: my_migrator_image
+    build: .
+    environment:
+      DB_HOST: database_container
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: sapkota2*
+      DB_NAME: backup
+    command: >
+      sh -c "until nc -z database_container 3306; do echo 'Waiting for database...'; sleep 1; done; npx sequelize-cli db:migrate --host=database_container --port=3306"
+    depends_on:
+      - database_container
+
+volumes:
+  db_data:
